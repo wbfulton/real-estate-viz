@@ -1,3 +1,14 @@
+import {
+  Handshake,
+  Home,
+  HousePlus,
+  LucideProps,
+  School,
+  StoreIcon,
+  Tent,
+} from "lucide-react";
+import { ForwardRefExoticComponent, RefAttributes } from "react";
+
 export interface PapaCSVResponse {
   data: Array<string | undefined[]>;
   errors: {
@@ -29,6 +40,8 @@ export interface Property {
   projectStatus: ProjectStatus;
   isAlchemyListing: boolean;
   dateLastModified: Date;
+  lat?: number;
+  lon?: number;
 }
 
 export enum ProjectStatus {
@@ -53,6 +66,18 @@ const projectListingOrder = [
   ProjectStatus.COMPLETED,
 ];
 
+// https://cssgradient.io/
+export const ProjectStatusColor: { [key in ProjectStatus]: string } = {
+  [ProjectStatus.PERMIT_PENDING]: "#c80000",
+  [ProjectStatus.PERMIT_ISSUED]: "#ba1600",
+  [ProjectStatus.FOUNDATION]: "#a43800",
+  [ProjectStatus.FRAMING]: "#915600",
+  [ProjectStatus.ROUGH_INS]: "#846a00",
+  [ProjectStatus.SHEETROCK]: "#59ae00",
+  [ProjectStatus.FINISHES]: "#89bc06",
+  [ProjectStatus.COMPLETED]: "#49c800",
+};
+
 export enum ProjectType {
   EXISTING_RESALE = "Existing Re-sale",
   LIVE_WORK = "Live/Work",
@@ -61,6 +86,19 @@ export enum ProjectType {
   COTTAGE = "Cottage",
   SFR_ADU_DADU = "SFR / ADU / DADU",
 }
+
+export type LucideIcon = ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+>;
+
+export const ProjectTypeIcon: { [key in ProjectType]: LucideIcon } = {
+  [ProjectType.EXISTING_RESALE]: Handshake,
+  [ProjectType.LIVE_WORK]: StoreIcon,
+  [ProjectType.SINGLE_FAMILY]: Home,
+  [ProjectType.TOWNHOUSE]: School,
+  [ProjectType.COTTAGE]: Tent,
+  [ProjectType.SFR_ADU_DADU]: HousePlus,
+};
 
 export const parseRealEstateCSV = (csvRes: PapaCSVResponse): Property[] => {
   if (csvRes.errors.length > 0) {
@@ -121,6 +159,10 @@ export const parseRealEstateCSV = (csvRes: PapaCSVResponse): Property[] => {
         projectStatus: csvProperty[10] as ProjectStatus,
         isAlchemyListing: Boolean(csvProperty[11]),
         dateLastModified: new Date(csvProperty[12] ?? ""),
+        lat:
+          csvProperty[13] !== undefined ? Number(csvProperty[13]) : undefined,
+        lon:
+          csvProperty[14] !== undefined ? Number(csvProperty[14]) : undefined,
       };
 
       properties.push(property);

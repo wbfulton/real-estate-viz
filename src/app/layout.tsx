@@ -14,26 +14,13 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "100 Series Parts Visualizer",
-  description: "Three.js visualizer of all LC 100 parts",
-  applicationName: "lc100-parts",
-  authors: { name: "Will Fulton" },
-  keywords: [
-    "Toyota",
-    "LC",
-    "Land Cruiser",
-    "100 Series",
-    "Parts",
-    "Diagrams",
-    "3D",
-    "Car",
-    "Truck",
-  ],
+  title: "Real Estate Viz",
+  description: "Tool to help Tristan do real estate",
+  applicationName: "real-estate-viz",
+  authors: { name: "Will Fulton & Tristan Brown" },
+  keywords: ["Real Estate"],
   icons: "/icon.ico",
 };
-
-// diagram/
-// part/
 
 export default function RootLayout({
   children,
