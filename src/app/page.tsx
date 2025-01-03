@@ -1,11 +1,9 @@
 "use client";
 
-import type { Feature } from "geojson";
-import { useState } from "react";
-import Map, { Marker } from "react-map-gl";
+import { useEffect, useMemo, useState } from "react";
+import Map, { Marker, Popup, ScaleControl, useMap } from "react-map-gl";
 import { PropertiesList } from "./components/PropertiesList";
 import { UploadCSVButton } from "./components/UploadCSVButton";
-import { data } from "./data";
 import {
   PapaCSVResponse,
   parseRealEstateCSV,
@@ -16,34 +14,78 @@ import {
   Property,
 } from "./utils";
 
-export default function Home() {
-  const [csvData, setCSVData] = useState<Property[] | undefined>(data);
+const FlyTo = ({ selectedProperty }: { selectedProperty?: Property }) => {
+  const { current: map } = useMap();
 
-  const geojsonProperties: Feature[] = [];
-
-  csvData?.forEach((prop) => {
-    if (prop.lat && prop.lon) {
-      const data: Feature = {
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [prop.lon, prop.lat] },
-        properties: [],
-      };
-
-      geojsonProperties.push(data);
+  useEffect(() => {
+    if (
+      map !== undefined &&
+      selectedProperty?.lat !== undefined &&
+      selectedProperty.lon !== undefined
+    ) {
+      map?.flyTo({
+        center: [selectedProperty.lon, selectedProperty?.lat],
+        zoom: 15,
+      });
     }
-  });
+  }, [map, selectedProperty]);
 
-  // const geojson: FeatureCollection = {
-  //   type: "FeatureCollection",
-  //   features: [
-  //     {
-  //       type: "Feature",
-  //       geometry: { type: "Point", coordinates: [-122.325989, 47.648071] },
-  //       properties: [],
-  //     },
-  //     ...geojsonProperties,
-  //   ],
-  // };
+  return null;
+};
+
+export default function Home() {
+  const [csvData, setCSVData] = useState<Property[] | undefined>();
+  const [hoveredId, setHoveredId] = useState<number | undefined>();
+  const [selectedId, setSelectedId] = useState<number | undefined>();
+
+  // HTML Render
+  // Source + Layer flow is more performant
+  const markers = useMemo(
+    () =>
+      csvData?.map((propData, i) => {
+        if (
+          propData.lat === undefined ||
+          propData.lon === undefined ||
+          propData.projectType === undefined
+        ) {
+          return null;
+        }
+
+        const Icon = ProjectTypeIcon[propData.projectType as ProjectType];
+
+        const color =
+          ProjectStatusColor[propData.projectStatus as ProjectStatus];
+
+        return (
+          <Marker
+            key={"marker-" + i}
+            longitude={propData.lon}
+            latitude={propData.lat}
+            className="rounded-md bg-background hover:cursor-pointer"
+            onClick={() => setSelectedId(propData.id)}>
+            <Icon
+              className="h-5 w-5"
+              color={color}
+              onMouseEnter={() => {
+                setHoveredId(propData.id);
+              }}
+              onMouseLeave={() => {
+                setHoveredId(undefined);
+              }}
+            />
+          </Marker>
+        );
+      }),
+    [csvData],
+  );
+
+  const hoveredProperty = useMemo(() => {
+    return csvData?.filter((data) => data.id === hoveredId)?.[0];
+  }, [csvData, hoveredId]);
+
+  const selectedProperty = useMemo(() => {
+    return csvData?.filter((data) => data.id === selectedId)?.[0];
+  }, [csvData, selectedId]);
 
   return (
     <div
@@ -72,7 +114,11 @@ export default function Home() {
         <h1 className="py-2 text-xl">All Listings</h1>
         <div className="flex flex-1 overflow-hidden">
           <div className="max-h-full w-2/5 overflow-scroll">
-            <PropertiesList csvData={csvData} />
+            <PropertiesList
+              csvData={csvData}
+              selectedId={selectedId}
+              setSelectedId={(selectedId: number) => setSelectedId(selectedId)}
+            />
           </div>
           <div className="w-3/5 px-4">
             <Map
@@ -82,33 +128,28 @@ export default function Home() {
                 latitude: 47.648071,
                 zoom: 9.5,
               }}
-              style={{ width: 600, height: 500 }}
+              style={{ width: 700, height: 550 }}
               mapStyle="mapbox://styles/mapbox/streets-v9">
-              {data?.map((propData, i) => {
-                if (
-                  propData.lat === undefined ||
-                  propData.lon === undefined ||
-                  propData.projectType === undefined
-                ) {
-                  return null;
-                }
-
-                const Icon =
-                  ProjectTypeIcon[propData.projectType as ProjectType];
-
-                const color =
-                  ProjectStatusColor[propData.projectStatus as ProjectStatus];
-
-                return (
-                  <Marker
-                    key={"marker-" + i}
-                    longitude={propData.lon}
-                    latitude={propData.lat}
-                    className="rounded-md bg-background">
-                    <Icon className="h-5 w-5" color={color} />
-                  </Marker>
-                );
-              })}
+              <ScaleControl />
+              <FlyTo selectedProperty={selectedProperty} />
+              {markers}
+              {hoveredProperty?.lon && hoveredProperty?.lat && (
+                <Popup
+                  longitude={hoveredProperty.lon}
+                  latitude={hoveredProperty.lat}
+                  closeButton={false}
+                  anchor="bottom"
+                  offset={10}
+                  onClose={() => setHoveredId(undefined)}>
+                  <div className="font-semibold">
+                    {hoveredProperty.nickname ??
+                      hoveredProperty.neighborhood ??
+                      hoveredProperty.builderName}
+                  </div>
+                  <div>{hoveredProperty.streetAddress}</div>
+                  <div>{`${hoveredProperty.numAvailableUnits} / ${hoveredProperty.numUnits} Units Available`}</div>
+                </Popup>
+              )}
             </Map>
           </div>
         </div>
@@ -116,7 +157,7 @@ export default function Home() {
       <footer
         className="absolute bottom-0 right-0 z-50 flex flex-wrap items-center justify-center
           bg-transparent p-2">
-        Created by Former Go-Globalers
+        Created by Ex-Go-Globalers
       </footer>
     </div>
   );

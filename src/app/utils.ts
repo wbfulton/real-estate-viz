@@ -27,6 +27,7 @@ export interface PapaCSVResponse {
 }
 
 export interface Property {
+  id: number,
   nickname?: string;
   builderName: string;
   projectType?: ProjectType;
@@ -146,6 +147,7 @@ export const parseRealEstateCSV = (csvRes: PapaCSVResponse): Property[] => {
           : completionDateStr;
 
       const property: Property = {
+        id: i,
         nickname: nickname,
         builderName: csvProperty[1] ?? "",
         projectType,
