@@ -1,7 +1,6 @@
 {
   "name": "real-estate-viz",
   "version": "0.1.0",
-  "homepage": "https://wbfulton.github.io/react-gh-pages",
   "private": true,
   "scripts": {
     "dev": "next dev",
