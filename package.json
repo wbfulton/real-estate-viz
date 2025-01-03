@@ -40,7 +40,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.468.0",
     "mapbox-gl": "^3.9.1",
-    "next": "^14",
+    "next": "^15",
     "prettier-plugin-classnames": "^0.7.5",
     "prettier-plugin-merge": "^0.7.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
