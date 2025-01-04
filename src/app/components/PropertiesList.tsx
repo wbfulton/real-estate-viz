@@ -51,9 +51,9 @@ export const PropertiesList = ({
             <CardHeader>
               <div className="flex items-start justify-between">
                 <CardTitle className="w-8/12">
-                  {data.nickname ?? data.neighborhood ?? data.builderName}
+                  {data.nickname ?? "No Nickname"}
                 </CardTitle>
-                <CardDescription className="flex w-4/12 items-center justify-around text-right">
+                <CardDescription className="flex w-4/12 items-center justify-between text-right">
                   <Button
                     variant={"ghost"}
                     onClick={() => setSelectedId(data.id)}>
@@ -63,6 +63,7 @@ export const PropertiesList = ({
                 </CardDescription>
               </div>
               <CardDescription className="flex justify-between">
+                <span>{`${data.streetAddress}`}</span>
                 <span className="text-right">{`${data.numAvailableUnits} / ${data.numUnits} Units Available`}</span>
               </CardDescription>
             </CardHeader>
