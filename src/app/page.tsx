@@ -142,9 +142,7 @@ export default function Home() {
                   offset={10}
                   onClose={() => setHoveredId(undefined)}>
                   <div className="font-semibold">
-                    {hoveredProperty.nickname ??
-                      hoveredProperty.neighborhood ??
-                      hoveredProperty.builderName}
+                    {hoveredProperty.nickname ?? "No Nickname"}
                   </div>
                   <div>{hoveredProperty.streetAddress}</div>
                   <div>{`${hoveredProperty.numAvailableUnits} / ${hoveredProperty.numUnits} Units Available`}</div>
@@ -157,7 +155,7 @@ export default function Home() {
       <footer
         className="absolute bottom-0 right-0 z-50 flex flex-wrap items-center justify-center
           bg-transparent p-2">
-        Created by Ex-Go-Globalers
+        Created by Tristan
       </footer>
     </div>
   );
