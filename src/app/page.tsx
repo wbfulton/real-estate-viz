@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Map, { Marker, Popup, ScaleControl, useMap } from "react-map-gl";
-import { PropertiesList } from "./components/PropertiesList";
-import { UploadCSVButton } from "./components/UploadCSVButton";
+import { PropertiesList } from "../components/PropertiesList";
+import { UploadCSVButton } from "../components/UploadCSVButton";
 import {
   PapaCSVResponse,
   parseRealEstateCSV,

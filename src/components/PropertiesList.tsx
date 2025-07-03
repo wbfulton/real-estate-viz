@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib";
 import { ChevronRight, Map } from "lucide-react";
 import { useEffect } from "react";
-import { doubleToCurrency, Property } from "../utils";
+import { doubleToCurrency, Property } from "../app/utils";
 
 export const PropertiesList = ({
   csvData,

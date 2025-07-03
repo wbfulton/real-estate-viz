@@ -2,7 +2,7 @@ import { Button } from "@/core-ui";
 import { Upload, X } from "lucide-react";
 import { CSSProperties, useMemo } from "react";
 import { useCSVReader } from "react-papaparse";
-import { PapaCSVResponse } from "../utils";
+import { PapaCSVResponse } from "../app/utils";
 
 const styles = {
   progressBarBackgroundColor: {
