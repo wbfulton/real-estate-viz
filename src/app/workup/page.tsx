@@ -39,26 +39,13 @@ export default function WorkupPage() {
   const [error, setError] = useState<string | null>(null);
 
   // PDF Analysis states
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState<string>("");
   const [pdfAnalysis, setPdfAnalysis] = useState<{
     matches: TextMatch[];
     cropAreas: CropArea[];
     totalMatches: number;
   } | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-
-  // 1. Enter Parcel ID
-  // 2. Hit https://info.kingcounty.gov/Assessor/eMap/Default.aspx
-  // 3. Parse PDF
-  // 4. Return screenshot of property
-
-  // 2. https://info.kingcounty.gov/assessor/emap/default.aspx?ParcelNbr=2926049360
-  // 3. Table, https://aqua.kingcounty.gov/assessor/emap/InternetPDF/qs_NE292604.pdf
-
-  // OR
-
-  // 2. https://blue.kingcounty.com/Assessor/eRealProperty/Detail.aspx?ParcelNbr=2926049360
-  // 3. Quarter-Section-Township-Range, https://aqua.kingcounty.gov/assessor/emap/InternetPDF/qs_NE292604.pdf
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
 
   const getData = async (parcelId: string) => {
     setLoading(true);
