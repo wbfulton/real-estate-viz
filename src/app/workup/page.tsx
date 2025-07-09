@@ -28,6 +28,7 @@ interface CropArea {
 }
 
 const EXAMPLE_PARCEL_ID = "2926049360";
+const EXAMPLE_SEARCH_TEXT = "9360";
 
 /**
  * All components to generate a workup of a property
@@ -39,7 +40,7 @@ export default function WorkupPage() {
   const [error, setError] = useState<string | null>(null);
 
   // PDF Analysis states
-  const [searchText, setSearchText] = useState<string>("");
+  const [searchText, setSearchText] = useState<string>(EXAMPLE_SEARCH_TEXT);
   const [pdfAnalysis, setPdfAnalysis] = useState<{
     matches: TextMatch[];
     cropAreas: CropArea[];
@@ -102,32 +103,53 @@ export default function WorkupPage() {
     }
   };
 
-  const analyzePDF = async () => {
-    if (!parcelId.trim() || !searchText.trim()) {
-      setError("Please enter both Parcel ID and search text");
-      return;
-    }
-
-    setAnalyzing(true);
+  const getCroppedPlatMap = async (parcelId: string) => {
     setError(null);
+    setPropertyData(null);
     setPdfAnalysis(null);
+    setAnalyzing(true);
 
     try {
-      const response = await fetch(
-        `/api/pdf-process?parcelId=${encodeURIComponent(parcelId)}&searchText=${encodeURIComponent(searchText)}`,
-      );
+      const response = await fetch(`/api/property-crop?parcelId=${parcelId}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `HTTP error! status: ${response.status}`,
-        );
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      setPdfAnalysis(data);
+      // Check if the response is a PDF
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/pdf")) {
+        // Download the PDF
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `property-${parcelId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        setPropertyData({
+          success: true,
+          parcelId,
+          link: `PDF downloaded: property-${parcelId}.pdf`,
+        });
+      } else {
+        // Handle JSON response (error case)
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        setPropertyData(data);
+      }
+
+      // Display the truncated HTML in the console for debugging
+      if (propertyData?.link) {
+        console.log("PDF link:", propertyData.link);
+      }
     } catch (error) {
-      console.error("Error analyzing PDF:", error);
+      console.error("Error fetching property data:", error);
       setError(
         error instanceof Error ? error.message : "Unknown error occurred",
       );
@@ -135,6 +157,46 @@ export default function WorkupPage() {
       setAnalyzing(false);
     }
   };
+
+  // const analyzePDF = async () => {
+  //   if (!parcelId.trim() || !searchText.trim()) {
+  //     setError("Please enter both Parcel ID and search text");
+  //     return;
+  //   }
+
+  //   setAnalyzing(true);
+  //   setError(null);
+  //   setPdfAnalysis(null);
+
+  //   try {
+  //     const response = await fetch(
+  //       `/api/property?parcelId=${encodeURIComponent(parcelId)}&searchText=${encodeURIComponent(searchText)}`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //       },
+  //     );
+
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(
+  //         errorData.error || `HTTP error! status: ${response.status}`,
+  //       );
+  //     }
+
+  //     const data = await response.json();
+  //     setPdfAnalysis(data);
+  //   } catch (error) {
+  //     console.error("Error analyzing PDF:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Unknown error occurred",
+  //     );
+  //   } finally {
+  //     setAnalyzing(false);
+  //   }
+  // };
 
   const downloadCroppedPDF = async () => {
     if (!pdfAnalysis || pdfAnalysis.matches.length === 0) {
@@ -286,9 +348,9 @@ export default function WorkupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-green-800 px-6 py-2 text-white hover:bg-green-900
+              className="rounded-md bg-green-500 px-6 py-2 text-white hover:bg-green-600
                 disabled:bg-gray-400">
-              {loading ? "Downloading..." : "Download Cropped PDF"}
+              {loading ? "Downloading..." : "Download PDF"}
             </button>
           </div>
         </form>
@@ -301,7 +363,7 @@ export default function WorkupPage() {
         )}
       </div>
 
-      {/* PDF Analysis Section */}
+      {/* Cropped Plat Map Section */}
       <div className="mt-8 rounded-lg border bg-white p-6">
         <h2 className="mb-4 text-xl font-semibold">Cropped Plat Map</h2>
         <p className="mb-4 text-sm text-gray-600">
@@ -345,7 +407,7 @@ export default function WorkupPage() {
 
         <div className="flex gap-4">
           <button
-            onClick={analyzePDF}
+            onClick={() => getCroppedPlatMap(parcelId)}
             disabled={analyzing}
             className="rounded-md bg-green-500 px-6 py-2 text-white hover:bg-green-600
               disabled:bg-gray-400">

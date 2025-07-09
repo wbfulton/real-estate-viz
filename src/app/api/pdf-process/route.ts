@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     }: ProcessRequest = await request.json();
 
     if (!pdfBuffer || !searchText) {
+      console.error("PDF buffer and search text are required");
       return NextResponse.json(
         { error: "PDF buffer and search text are required" },
         { status: 400 },
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (matches.length === 0) {
+      console.error("No text matches found");
       return NextResponse.json({
         message: "No text matches found",
         matches: [],
@@ -78,6 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (cropOnly && cropAreas.length > 0) {
+      console.log("Cropping PDF");
       // Actually crop the PDF using the PDFProcessor
       const processor = new PDFProcessor();
       await processor.loadPDF(pdfBuffer);
