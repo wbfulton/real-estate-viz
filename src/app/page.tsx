@@ -1,5 +1,7 @@
 "use client";
 
+import { MapIcon } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import Map, { Marker, Popup, ScaleControl, useMap } from "react-map-gl";
 import { PropertiesList } from "../components/PropertiesList";
@@ -99,7 +101,18 @@ export default function Home() {
         className="z-50 flex w-full items-center justify-between gap-2 bg-transparent px-6 py-2
           text-center">
         <div className="flex w-full items-center justify-between gap-2">
-          Tristan Real Estate Tool
+          <div className="flex items-center gap-4">
+            <span className="font-semibold">Tristan Real Estate Tool</span>
+            <div className="flex gap-2">
+              <Link
+                href="/workup"
+                className="flex items-center gap-1 rounded-md bg-blue-500 px-3 py-1 text-sm text-white
+                  hover:bg-blue-600">
+                <MapIcon size={14} />
+                Plat PDF
+              </Link>
+            </div>
+          </div>
           <UploadCSVButton
             onUploadAccepted={(results: PapaCSVResponse) => {
               setCSVData(parseRealEstateCSV(results));

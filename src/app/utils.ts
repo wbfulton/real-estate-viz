@@ -26,8 +26,12 @@ export interface PapaCSVResponse {
   }[];
 }
 
+export type LucideIcon = ForwardRefExoticComponent<
+  LucideProps & RefAttributes<SVGSVGElement>
+>;
+
 export interface Property {
-  id: number,
+  id: number;
   nickname?: string;
   builderName: string;
   projectType?: ProjectType;
@@ -88,10 +92,6 @@ export enum ProjectType {
   SFR_ADU_DADU = "SFR / ADU / DADU",
 }
 
-export type LucideIcon = ForwardRefExoticComponent<
-  Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
->;
-
 export const ProjectTypeIcon: { [key in ProjectType]: LucideIcon } = {
   [ProjectType.EXISTING_RESALE]: Handshake,
   [ProjectType.LIVE_WORK]: StoreIcon,
@@ -100,6 +100,129 @@ export const ProjectTypeIcon: { [key in ProjectType]: LucideIcon } = {
   [ProjectType.COTTAGE]: Tent,
   [ProjectType.SFR_ADU_DADU]: HousePlus,
 };
+
+// PDF Analysis Utilities
+export interface PDFAnalysisResult {
+  matches: Array<{
+    text: string;
+    page: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    fontSize: number;
+  }>;
+  cropAreas: Array<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    page: number;
+  }>;
+  totalMatches: number;
+}
+
+export const analyzePropertyPDF = async (
+  parcelId: string,
+  searchText: string,
+): Promise<PDFAnalysisResult> => {
+  const response = await fetch(
+    `/api/pdf-process?parcelId=${encodeURIComponent(parcelId)}&searchText=${encodeURIComponent(searchText)}`,
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`,
+    );
+  }
+
+  return await response.json();
+};
+
+export const downloadPropertyPDF = async (parcelId: string): Promise<void> => {
+  const response = await fetch(`/api/property?parcelId=${parcelId}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch PDF: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `property-${parcelId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
+
+export const downloadCroppedPDF = async (
+  parcelId: string,
+  searchText: string,
+  padding: number = 20,
+): Promise<void> => {
+  // First get the PDF
+  const pdfResponse = await fetch(`/api/property?parcelId=${parcelId}`);
+  if (!pdfResponse.ok) {
+    throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);
+  }
+
+  const pdfBuffer = await pdfResponse.arrayBuffer();
+  const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
+
+  // Then crop it using the actual cropping functionality
+  const cropResponse = await fetch("/api/pdf-process", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      pdfBuffer: pdfBase64,
+      searchText,
+      padding,
+      cropOnly: true,
+      returnCoordinates: false,
+    }),
+  });
+
+  if (!cropResponse.ok) {
+    throw new Error(`Failed to crop PDF: ${cropResponse.status}`);
+  }
+
+  const cropData = await cropResponse.json();
+
+  if (cropData.croppedPdf) {
+    const blob = new Blob([Buffer.from(cropData.croppedPdf, "base64")], {
+      type: "application/pdf",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cropped-${parcelId}-${searchText}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } else {
+    throw new Error("No cropped PDF data received");
+  }
+};
+
+// Common search terms for property documents
+export const COMMON_PROPERTY_SEARCH_TERMS = [
+  "Address",
+  "Owner",
+  "Assessed Value",
+  "Property Type",
+  "Square Footage",
+  "Year Built",
+  "Lot Size",
+  "Zoning",
+  "Tax Amount",
+  "Legal Description",
+];
 
 export const parseRealEstateCSV = (csvRes: PapaCSVResponse): Property[] => {
   if (csvRes.errors.length > 0) {
@@ -211,17 +334,9 @@ const convertCurrencyToDouble = (
   return doubleValue;
 };
 
-export const doubleToCurrency = (
-  number: number,
-  locale: string = "en-US",
-  currencyType: string = "USD",
-) => {
-  //   Creating a NumberFormat object with specified locale and currency
-  const formatter = new Intl.NumberFormat(locale, {
+export const doubleToCurrency = (value: number): string => {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currencyType,
-    currencyDisplay: "symbol",
-  });
-
-  return formatter.format(number);
+    currency: "USD",
+  }).format(value);
 };
