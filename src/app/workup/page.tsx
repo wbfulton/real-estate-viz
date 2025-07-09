@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 interface PropertyData {
@@ -26,9 +27,14 @@ interface CropArea {
   page: number;
 }
 
+const EXAMPLE_PARCEL_ID = "2926049360";
+
+/**
+ * All components to generate a workup of a property
+ */
 export default function WorkupPage() {
-  const [parcelId, setParcelId] = useState("2926049360");
-  const [loading, setLoading] = useState(false);
+  const [parcelId, setParcelId] = useState<string>(EXAMPLE_PARCEL_ID);
+  const [loading, setLoading] = useState<boolean>(false);
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -224,9 +230,63 @@ export default function WorkupPage() {
         </p>
       </div>
 
+      <div className="mt-8 rounded-lg border bg-white p-6">
+        <h2 className="mb-4 text-xl font-semibold">Useful Links</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex gap-4">
+            <input
+              type="text"
+              placeholder="Parcel Number"
+              className="flex-1 rounded-md border border-gray-300 p-2"
+              value={parcelId}
+              onChange={(e) => setParcelId(e.target.value)}
+            />
+          </div>
+        </form>
+
+        <div className="mt-4 flex flex-col gap-2 rounded-md p-4">
+          <Link
+            className="rounded-md px-4 py-2 hover:bg-gray-100"
+            href={`https://info.kingcounty.gov/Assessor/eMap/Default.aspx?ParcelNbr=${parcelId}`}
+            target="_blank">
+            Plat Map
+          </Link>
+          <Link
+            className="rounded-md px-4 py-2 hover:bg-gray-100"
+            href={`https://district-conditions-report.kingcounty.gov/?PIN=${parcelId}`}
+            target="_blank">
+            District Conditions Report
+          </Link>
+          <Link
+            className="rounded-md px-4 py-2 hover:bg-gray-100"
+            href={`https://blue.kingcounty.com/Assessor/eRealProperty/Dashboard.aspx?ParcelNbr=${parcelId}`}
+            target="_blank">
+            eReal / Assessors Report
+          </Link>
+          <Link
+            className="rounded-md px-4 py-2 hover:bg-gray-100"
+            href={`https://seattlecitygis.maps.arcgis.com/apps/webappviewer/index.html?id=f822b2c6498c4163b0cf908e2241e9c2`}
+            target="_blank">
+            Seattle GIS Map
+          </Link>
+          <Link
+            className="rounded-md px-4 py-2 hover:bg-gray-100"
+            href={`https://experience.arcgis.com/experience/95749d0993164eefa99300182e99bd43#data_s=id%3AdataSource_7-1907b2a4913-layer-88-191fc1fccc8-layer-109%3A22352292`}
+            target="_blank">
+            Water & Sewer GIS Map
+          </Link>
+          <Link
+            className="rounded-md px-4 py-2 hover:bg-gray-100"
+            href={`https://maps.seattle.gov/sdcisidesewercardviewer/`}
+            target="_blank">
+            Seattle Sewer Card
+          </Link>
+        </div>
+      </div>
+
       {/* PDF Download Section */}
       <div className="mt-8 rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-xl font-semibold">Download Property PDF</h2>
+        <h2 className="mb-4 text-xl font-semibold">Plat Map</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex gap-4">
             <input
@@ -239,9 +299,9 @@ export default function WorkupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-blue-500 px-6 py-2 text-white hover:bg-blue-600
+              className="rounded-md bg-green-800 px-6 py-2 text-white hover:bg-green-900
                 disabled:bg-gray-400">
-              {loading ? "Downloading..." : "Download PDF"}
+              {loading ? "Downloading..." : "Download Cropped PDF"}
             </button>
           </div>
         </form>
@@ -256,7 +316,7 @@ export default function WorkupPage() {
 
       {/* PDF Analysis Section */}
       <div className="mt-8 rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-xl font-semibold">PDF Text Analysis</h2>
+        <h2 className="mb-4 text-xl font-semibold">Cropped Plat Map</h2>
         <p className="mb-4 text-sm text-gray-600">
           Search for specific text in the property PDF and get coordinates or
           download cropped sections
