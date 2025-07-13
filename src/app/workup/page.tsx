@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { getDocument } from "pdfjs-dist";
 import { useState } from "react";
 
 // Configure PDF.js worker
@@ -12,26 +11,8 @@ interface PropertyData {
   link: string;
 }
 
-interface TextMatch {
-  text: string;
-  page: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fontSize: number;
-}
-
-interface CropArea {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  page: number;
-}
-
 const EXAMPLE_PARCEL_ID = "2926049360";
-const EXAMPLE_SEARCH_TEXT = "9360";
+// const EXAMPLE_SEARCH_TEXT = "9360";
 
 /**
  * All components to generate a workup of a property
@@ -39,23 +20,15 @@ const EXAMPLE_SEARCH_TEXT = "9360";
 export default function WorkupPage() {
   const [parcelId, setParcelId] = useState<string>(EXAMPLE_PARCEL_ID);
   const [loading, setLoading] = useState<boolean>(false);
+  const [sewerCardLoading, setSewerCardLoading] = useState<boolean>(false);
   const [propertyData, setPropertyData] = useState<PropertyData | null>(null);
+  const [sewerCardData, setSewerCardData] = useState<PropertyData | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // PDF Analysis states
-  const [searchText, setSearchText] = useState<string>(EXAMPLE_SEARCH_TEXT);
-  const [pdfAnalysis, setPdfAnalysis] = useState<{
-    matches: TextMatch[];
-    cropAreas: CropArea[];
-    totalMatches: number;
-  } | null>(null);
-  const [analyzing, setAnalyzing] = useState<boolean>(false);
 
   const getData = async (parcelId: string) => {
     setLoading(true);
     setError(null);
     setPropertyData(null);
-    setPdfAnalysis(null);
 
     try {
       const response = await fetch(`/api/property?parcelId=${parcelId}`);
@@ -106,42 +79,43 @@ export default function WorkupPage() {
     }
   };
 
-  const getCroppedPlatMap = async (parcelId: string) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (parcelId.trim()) {
+      getData(parcelId.trim());
+    }
+  };
+
+  const getSewerCard = async (parcelId: string) => {
+    setSewerCardLoading(true);
     setError(null);
-    setPropertyData(null);
-    setPdfAnalysis(null);
-    setAnalyzing(true);
+    setSewerCardData(null);
 
     try {
-      const response = await fetch(`/api/property-crop?parcelId=${parcelId}`);
+      const response = await fetch(`/api/sewer-card?parcelId=${parcelId}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const pdfBuffer = await response.arrayBuffer();
-
-      const position = await getDocument({ data: pdfBuffer }).promise;
-      console.log(position);
-
-      // Check if the response is a PDF
+      // Check if the response is a JPG
       const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/pdf")) {
-        // Download the PDF
+      if (contentType && contentType.includes("image/jpeg")) {
+        // Download the JPG
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `property-${parcelId}.pdf`;
+        a.download = `sewer-card-front-${parcelId}.jpg`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        setPropertyData({
+        setSewerCardData({
           success: true,
           parcelId,
-          link: `PDF downloaded: property-${parcelId}.pdf`,
+          link: `JPG downloaded: sewer-card-front-${parcelId}.jpg`,
         });
       } else {
         // Handle JSON response (error case)
@@ -149,12 +123,12 @@ export default function WorkupPage() {
         if (data.error) {
           throw new Error(data.error);
         }
-        setPropertyData(data);
+        setSewerCardData(data);
       }
 
       // Display the truncated HTML in the console for debugging
       if (propertyData?.link) {
-        console.log("PDF link:", propertyData.link);
+        console.log("JPG link:", propertyData.link);
       }
     } catch (error) {
       console.error("Error fetching property data:", error);
@@ -162,119 +136,14 @@ export default function WorkupPage() {
         error instanceof Error ? error.message : "Unknown error occurred",
       );
     } finally {
-      setAnalyzing(false);
+      setSewerCardLoading(false);
     }
   };
 
-  // const analyzePDF = async () => {
-  //   if (!parcelId.trim() || !searchText.trim()) {
-  //     setError("Please enter both Parcel ID and search text");
-  //     return;
-  //   }
-
-  //   setAnalyzing(true);
-  //   setError(null);
-  //   setPdfAnalysis(null);
-
-  //   try {
-  //     const response = await fetch(
-  //       `/api/property?parcelId=${encodeURIComponent(parcelId)}&searchText=${encodeURIComponent(searchText)}`,
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //       },
-  //     );
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(
-  //         errorData.error || `HTTP error! status: ${response.status}`,
-  //       );
-  //     }
-
-  //     const data = await response.json();
-  //     setPdfAnalysis(data);
-  //   } catch (error) {
-  //     console.error("Error analyzing PDF:", error);
-  //     setError(
-  //       error instanceof Error ? error.message : "Unknown error occurred",
-  //     );
-  //   } finally {
-  //     setAnalyzing(false);
-  //   }
-  // };
-
-  const downloadCroppedPDF = async () => {
-    if (!pdfAnalysis || pdfAnalysis.matches.length === 0) {
-      setError("No matches to crop");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Get the original PDF first
-      const pdfResponse = await fetch(`/api/property?parcelId=${parcelId}`);
-      if (!pdfResponse.ok) {
-        throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);
-      }
-
-      const pdfBuffer = await pdfResponse.arrayBuffer();
-      const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
-
-      // Now crop the PDF
-      const cropResponse = await fetch("/api/pdf-process", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pdfBuffer: pdfBase64,
-          searchText: searchText,
-          padding: 20,
-          cropOnly: true,
-          returnCoordinates: false,
-        }),
-      });
-
-      if (!cropResponse.ok) {
-        throw new Error(`Failed to crop PDF: ${cropResponse.status}`);
-      }
-
-      const cropData = await cropResponse.json();
-
-      if (cropData.croppedPdf) {
-        // Download the cropped PDF
-        const blob = new Blob([Buffer.from(cropData.croppedPdf, "base64")], {
-          type: "application/pdf",
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `cropped-${parcelId}-${searchText}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
-    } catch (error) {
-      console.error("Error downloading cropped PDF:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to download cropped PDF",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSewerCardSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (parcelId.trim()) {
-      getData(parcelId.trim());
+      getSewerCard(parcelId.trim());
     }
   };
 
@@ -371,114 +240,32 @@ export default function WorkupPage() {
         )}
       </div>
 
-      {/* Cropped Plat Map Section */}
+      {/* Sewer Card Download Section */}
       <div className="mt-8 rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-xl font-semibold">Cropped Plat Map</h2>
-        <p className="mb-4 text-sm text-gray-600">
-          Search for specific text in the property PDF and get coordinates or
-          download cropped sections
-        </p>
-
-        <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label
-              htmlFor="analysisParcelId"
-              className="mb-1 block text-sm font-medium text-gray-700">
-              Parcel ID
-            </label>
+        <h2 className="mb-4 text-xl font-semibold">Sewer Card</h2>
+        <form onSubmit={handleSewerCardSubmit} className="flex flex-col gap-4">
+          <div className="flex gap-4">
             <input
-              id="analysisParcelId"
               type="text"
+              placeholder="Parcel ID"
+              className="flex-1 rounded-md border border-gray-300 p-2"
               value={parcelId}
               onChange={(e) => setParcelId(e.target.value)}
-              className="w-full rounded-md border border-gray-300 p-2"
-              placeholder="e.g., 2926049360"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="searchText"
-              className="mb-1 block text-sm font-medium text-gray-700">
-              Search Text
-            </label>
-            <input
-              id="searchText"
-              type="text"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="w-full rounded-md border border-gray-300 p-2"
-              placeholder="e.g., Address, Owner, etc."
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            onClick={() => getCroppedPlatMap(parcelId)}
-            disabled={analyzing}
-            className="rounded-md bg-green-500 px-6 py-2 text-white hover:bg-green-600
-              disabled:bg-gray-400">
-            {analyzing ? "Analyzing..." : "Analyze PDF"}
-          </button>
-
-          {pdfAnalysis && pdfAnalysis.matches.length > 0 && (
             <button
-              onClick={downloadCroppedPDF}
-              disabled={loading}
-              className="rounded-md bg-purple-500 px-6 py-2 text-white hover:bg-purple-600
+              type="submit"
+              disabled={sewerCardLoading}
+              className="rounded-md bg-green-500 px-6 py-2 text-white hover:bg-green-600
                 disabled:bg-gray-400">
-              {loading ? "Processing..." : "Download Cropped PDF"}
+              {sewerCardLoading ? "Downloading..." : "Download JPG"}
             </button>
-          )}
-        </div>
+          </div>
+        </form>
 
-        {pdfAnalysis && (
-          <div className="mt-6">
-            <h3 className="mb-3 font-semibold">
-              Analysis Results ({pdfAnalysis.totalMatches} matches found)
-            </h3>
-
-            {pdfAnalysis.matches.length === 0 ? (
-              <p className="text-gray-500">No text matches found.</p>
-            ) : (
-              <div className="space-y-3">
-                {pdfAnalysis.matches.map((match, index) => (
-                  <div
-                    key={index}
-                    className="rounded border border-gray-200 p-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium">
-                          Text: &ldquo;{match.text}&rdquo;
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Page {match.page}
-                        </p>
-                      </div>
-                      <div className="text-right text-sm text-gray-500">
-                        <p>X: {Math.round(match.x)}</p>
-                        <p>Y: {Math.round(match.y)}</p>
-                        <p>
-                          Size: {Math.round(match.width)} ×{" "}
-                          {Math.round(match.height)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 text-xs text-gray-500">
-                      <p>
-                        Crop Area: X=
-                        {Math.round(pdfAnalysis.cropAreas[index].x)}, Y=
-                        {Math.round(pdfAnalysis.cropAreas[index].y)}, W=
-                        {Math.round(pdfAnalysis.cropAreas[index].width)}, H=
-                        {Math.round(pdfAnalysis.cropAreas[index].height)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {sewerCardData && (
+          <div className="mt-4 rounded-md bg-green-50 p-4">
+            <h3 className="font-medium text-green-800">Success!</h3>
+            <p className="text-sm text-green-600">{sewerCardData.link}</p>
           </div>
         )}
       </div>
