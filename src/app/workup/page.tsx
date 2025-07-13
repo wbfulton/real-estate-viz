@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { getDocument } from "pdfjs-dist";
 import { useState } from "react";
+
+// Configure PDF.js worker
 
 interface PropertyData {
   success: boolean;
@@ -115,6 +118,11 @@ export default function WorkupPage() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const pdfBuffer = await response.arrayBuffer();
+
+      const position = await getDocument({ data: pdfBuffer }).promise;
+      console.log(position);
 
       // Check if the response is a PDF
       const contentType = response.headers.get("content-type");

@@ -41,9 +41,6 @@ importers:
       '@types/geojson':
         specifier: ^7946.0.15
         version: 7946.0.15
-      '@types/pdfjs-dist':
-        specifier: ^2.10.378
-        version: 2.10.378
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -120,6 +117,9 @@ importers:
       '@types/lodash':
         specifier: ^4.17.13
         version: 4.17.13
+      '@types/pdfjs-dist':
+        specifier: ^2.10.378
+        version: 2.10.378
       '@types/react':
         specifier: ^18
         version: 18.3.14

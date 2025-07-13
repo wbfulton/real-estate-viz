@@ -53,6 +53,26 @@ export class PDFProcessor {
     }
   }
 
+  async loadArrayBufferPDF(pdfBuffer: ArrayBuffer): Promise<void> {
+    try {
+      this.pdfData = new Uint8Array(pdfBuffer);
+
+      // For server-side rendering, we need to handle the worker differently
+      const loadingTask = pdfjsLib.getDocument({
+        data: this.pdfData,
+        verbosity: 0, // Reduce logging
+      });
+
+      this.pdfDoc = await loadingTask.promise;
+      console.log(`PDF loaded successfully with ${this.pdfDoc.numPages} pages`);
+    } catch (error) {
+      console.error("Error loading PDF:", error);
+      throw new Error(
+        `Failed to load PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
   async findTextInstances(searchText: string): Promise<TextMatch[]> {
     if (!this.pdfDoc) {
       throw new Error("PDF not loaded. Call loadPDF() first.");
